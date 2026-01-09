@@ -1,74 +1,101 @@
 #!/usr/bin/env bash
 set -e
 
-### ================= CONFIG =================
-RAM_THRESHOLD=80        # %
-SWAP_THRESHOLD_MB=300   # MB
-DURATION=120            # seconds (2 minutes)
+### ===== CONFIG =====
+RAM_THRESHOLD=80          # %
+SWAP_THRESHOLD_MB=300     # MB
+DURATION=120              # seconds
+COOLDOWN=600              # seconds (10 min)
+SERVICE="x-ui"
 
-WATCHDOG="/usr/local/bin/xui-ram-watch.sh"
-LOG="/var/log/xui-ram-watch.log"
-CRON_JOB="* * * * * $WATCHDOG"
-STATE="/tmp/xui_ram_high"
+UNIT="/usr/local/bin/xui-ram-guard"
+STATE_DIR="/run/xui-ram-guard"
+STATE_FILE="$STATE_DIR/high_since"
+LAST_RESTART="$STATE_DIR/last_restart"
 
-### ================= ROOT CHECK =================
+SERVICE_FILE="/etc/systemd/system/xui-ram-guard.service"
+TIMER_FILE="/etc/systemd/system/xui-ram-guard.timer"
+
+### ===== ROOT CHECK =====
 if [[ $EUID -ne 0 ]]; then
-    echo "❌ Please run as root"
-    exit 1
+  echo "❌ run as root"
+  exit 1
 fi
 
-echo "✅ Installing x-ui RAM watchdog..."
+echo "▶ Installing SAFE x-ui RAM guard"
 
-### ================= CREATE WATCHDOG =================
-cat > "$WATCHDOG" <<EOF
+### ===== GUARD SCRIPT =====
+cat > "$UNIT" <<EOF
 #!/bin/bash
+set -e
 
-LOG="$LOG"
-STATE="$STATE"
+mkdir -p "$STATE_DIR"
 
 RAM_USED=\$(free | awk '/Mem:/ {printf "%.0f", \$3/\$2*100}')
-SWAP_USED_MB=\$(free | awk '/Swap:/ {printf "%.0f", \$3/1024}')
+SWAP_USED=\$(free | awk '/Swap:/ {printf "%.0f", \$3/1024}')
+NOW=\$(date +%s)
 
-if [ "\$RAM_USED" -ge "$RAM_THRESHOLD" ] || [ "\$SWAP_USED_MB" -ge "$SWAP_THRESHOLD_MB" ]; then
-    if [ ! -f "\$STATE" ]; then
-        date +%s > "\$STATE"
-    fi
+over_limit=0
+[[ "\$RAM_USED" -ge "$RAM_THRESHOLD" ]] && over_limit=1
+[[ "\$SWAP_USED" -ge "$SWAP_THRESHOLD_MB" ]] && over_limit=1
 
-    NOW=\$(date +%s)
-    START=\$(cat "\$STATE")
-    ELAPSED=\$((NOW - START))
-
-    if [ "\$ELAPSED" -ge "$DURATION" ]; then
-        echo "\$(date) restart x-ui RAM=\${RAM_USED}% SWAP=\${SWAP_USED_MB}MB" >> "\$LOG"
-        systemctl restart x-ui
-        rm -f "\$STATE"
-    fi
+if [[ \$over_limit -eq 1 ]]; then
+  [[ ! -f "$STATE_FILE" ]] && echo "\$NOW" > "$STATE_FILE"
 else
-    rm -f "\$STATE"
+  rm -f "$STATE_FILE"
+  exit 0
 fi
+
+START=\$(cat "$STATE_FILE")
+ELAPSED=\$((NOW - START))
+
+[[ "\$ELAPSED" -lt "$DURATION" ]] && exit 0
+
+if [[ -f "$LAST_RESTART" ]]; then
+  LAST=\$(cat "$LAST_RESTART")
+  [[ \$((NOW - LAST)) -lt "$COOLDOWN" ]] && exit 0
+fi
+
+echo "\$NOW" > "$LAST_RESTART"
+rm -f "$STATE_FILE"
+
+systemctl restart $SERVICE
+logger "[xui-ram-guard] restart x-ui RAM=\${RAM_USED}% SWAP=\${SWAP_USED}MB"
 EOF
 
-chmod +x "$WATCHDOG"
+chmod +x "$UNIT"
 
-### ================= CREATE LOG =================
-touch "$LOG"
-chmod 644 "$LOG"
+### ===== SYSTEMD SERVICE =====
+cat > "$SERVICE_FILE" <<EOF
+[Unit]
+Description=x-ui RAM Guard
 
-### ================= SET CRON =================
-( crontab -l 2>/dev/null | grep -v "$WATCHDOG" ; echo "$CRON_JOB" ) | crontab -
+[Service]
+Type=oneshot
+ExecStart=$UNIT
+EOF
 
-### ================= DONE =================
+### ===== SYSTEMD TIMER =====
+cat > "$TIMER_FILE" <<EOF
+[Unit]
+Description=Run x-ui RAM Guard every minute
+
+[Timer]
+OnBootSec=60
+OnUnitActiveSec=60
+AccuracySec=10s
+
+[Install]
+WantedBy=timers.target
+EOF
+
+### ===== ENABLE =====
+systemctl daemon-reexec
+systemctl daemon-reload
+systemctl enable --now xui-ram-guard.timer
+
 echo
-echo "========================================"
-echo "✅ x-ui RAM watchdog installed"
-echo "• Threshold  : RAM >= ${RAM_THRESHOLD}%"
-echo "• Swap limit : >= ${SWAP_THRESHOLD_MB} MB"
-echo "• Duration  : ${DURATION} sec"
-echo "• Check every 1 minute"
-echo
-echo "Watchdog file : $WATCHDOG"
-echo "Log file      : $LOG"
-echo
-echo "Check log with:"
-echo "  tail -f $LOG"
-echo "========================================"
+echo "✅ Installed successfully"
+echo "• RAM >= ${RAM_THRESHOLD}% for ${DURATION}s → restart x-ui"
+echo "• Cooldown ${COOLDOWN}s"
+echo "• Logs: journalctl -t xui-ram-guard"
