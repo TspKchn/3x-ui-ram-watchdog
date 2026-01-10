@@ -1,5 +1,5 @@
 # 3x-ui-ram-watchdog
 ```
-wget -O install-xui-watchdog.sh https://raw.githubusercontent.com/TspKchn/3x-ui-ram-watchdog/main/install-xui-watchdog.sh && chmod +x install-xui-watchdog.sh && sudo bash install-xui-watchdog.sh && rm -f install-xui-watchdog.sh
+wget -O install-xui-watchdog-final.sh https://raw.githubusercontent.com/TspKchn/3x-ui-ram-watchdog/main/install-xui-watchdog-final.sh && chmod +x install-xui-watchdog-final.sh && sudo bash install-xui-watchdog-final.sh && rm -f install-xui-watchdog-final.sh
 
 ```
