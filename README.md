@@ -82,6 +82,7 @@ rm -f /etc/systemd/system/xui-watchdog.*
 rm -f /var/log/xui-watchdog.log
 rm -rf /run/xui-watchdog
 systemctl daemon-reload
+
 ```
 
 ---
