@@ -33,7 +33,7 @@
 ## 🚀 Installation
 
 ```bash
-wget -O install-watchdog.sh https://raw.githubusercontent.com/TspKchn/3x-ui-ram-watchdog/main/install-xui-watchdog-final.sh \
+wget -O install-watchdog.sh https://raw.githubusercontent.com/TspKchn/3x-ui-ram-watchdog/main/install-watchdog.sh \
 && chmod +x install-watchdog.sh \
 && bash install-watchdog.sh \
 && rm -f install-watchdog.sh
