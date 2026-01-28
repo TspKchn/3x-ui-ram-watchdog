@@ -37,6 +37,7 @@ wget -O install-watchdog.sh https://raw.githubusercontent.com/TspKchn/3x-ui-ram-
 && chmod +x install-watchdog.sh \
 && bash install-watchdog.sh \
 && rm -f install-watchdog.sh
+
 ```
 
 ---
@@ -46,6 +47,7 @@ wget -O install-watchdog.sh https://raw.githubusercontent.com/TspKchn/3x-ui-ram-
 เปิดเมนู watchdog:
 ```bash
 watchdog
+
 ```
 
 ---
@@ -55,6 +57,7 @@ watchdog
 ```bash
 tail -f /var/log/xui-watchdog.log
 systemctl status xui-watchdog.timer
+
 ```
 
 ---
