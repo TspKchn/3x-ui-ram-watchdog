@@ -18,7 +18,7 @@ LOG_FILE="/var/log/xui-watchdog.log"
 SERVICE_FILE="/etc/systemd/system/${SERVICE_NAME}.service"
 TIMER_FILE="/etc/systemd/system/${SERVICE_NAME}.timer"
 
-RAM_RESTART=80     # %
+RAM_RESTART=70     # %
 DURATION=120       # seconds
 COOLDOWN=600       # seconds
 
@@ -85,7 +85,7 @@ HIGH_FILE="$STATE_DIR/high"
 LAST_FILE="$STATE_DIR/last"
 LOG="/var/log/xui-watchdog.log"
 
-RAM_RESTART=80
+RAM_RESTART=70
 DURATION=120
 COOLDOWN=600
 
