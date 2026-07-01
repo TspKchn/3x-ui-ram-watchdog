@@ -13,7 +13,7 @@
 
 ## ✨ Features
 
-- 🔄 Restart x-ui อัตโนมัติเมื่อ RAM ≥ 80%
+- 🔄 Restart x-ui อัตโนมัติเมื่อ RAM ≥ 75%
 - ⏳ Cooldown ป้องกัน restart ถี่
 - 🧹 ลบ watchdog รุ่นเก่าอัตโนมัติ
 - 📉 คุม log ไม่ให้กิน storage
@@ -64,7 +64,7 @@ systemctl status xui-watchdog.timer
 
 ## ⚙ Default Config
 
-- RAM Threshold: 80%
+- RAM Threshold: 75%
 - Duration: 120s
 - Cooldown: 600s
 - Action: restart x-ui
